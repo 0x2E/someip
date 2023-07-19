@@ -105,7 +105,7 @@ func buildMMDB(data []*net.IPNet, output string) error {
 	defer outputF.Close()
 
 	writer, err := mmdbwriter.New(mmdbwriter.Options{
-		DatabaseType: "",
+		DatabaseType: "GeoIP2-Country",
 		RecordSize:   24,
 	})
 	if err != nil {
