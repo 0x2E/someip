@@ -26,11 +26,13 @@ jobs:
         run: |
           ./build.sh
       - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: build
-          publish_dir: ./dist
-          force_orphan: true
-          user_name: "github-actions[bot]"
-          user_email: "github-actions[bot]@users.noreply.github.com"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git checkout --orphan build
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          mv dist/* ./ && git rm -rf .
+          git add cidr.txt Country.mmdb
+          git commit --no-gpg-sign -m "$(date +'%Y-%m-%d %H:%M:%S')"
+          git push -f -u origin build
