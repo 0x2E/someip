@@ -1,5 +1,7 @@
 # someip
 
+[![GitHub last commit (branch)](https://img.shields.io/github/last-commit/0x2E/someip/build?label=%E6%9C%80%E6%96%B0%E6%9E%84%E5%BB%BA)](https://github.com/0x2E/someip/tree/build)
+
 中国大陆地区 IP，由多个数据源合并而来，每 3 天的 01:00 自动更新。
 
 下载地址：
@@ -16,7 +18,7 @@
 
 欢迎推荐更好的数据源。
 
-## 我想用自己的数据
+## 自定义
 
 参考 `build.sh`，传入你喜欢的数据源：
 
