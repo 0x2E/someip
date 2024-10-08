@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/EvilSuperstars/go-cidrman"
+	"github.com/Netnod/go-cidrman"
 	"github.com/maxmind/mmdbwriter"
 	"github.com/maxmind/mmdbwriter/mmdbtype"
 	"github.com/spf13/pflag"
