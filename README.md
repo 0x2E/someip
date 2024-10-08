@@ -9,6 +9,8 @@
 - [cidr.txt](https://raw.githubusercontent.com/0x2E/someip/build/cidr.txt)
 - [Country.mmdb](https://raw.githubusercontent.com/0x2E/someip/build/Country.mmdb)
 
+如果不准，请先测试一下最新版 Country.mmdb: <https://mmdb.rook1e.com/>。
+
 ## 数据源
 
 IPv4:
