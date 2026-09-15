@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"log"
 	"net"
 	"net/netip"
@@ -56,24 +58,9 @@ func merge(source []string) ([]*net.IPNet, error) {
 	builder := &netipx.IPSetBuilder{}
 
 	for _, file := range source {
-		f, err := os.Open(file)
-		if err != nil {
+		if err := readSource(file, builder); err != nil {
 			return nil, err
 		}
-		scanner := bufio.NewScanner(f)
-		for scanner.Scan() {
-			line := strings.TrimSpace(scanner.Text())
-			if line == "" {
-				continue
-			}
-			prefix, err := netip.ParsePrefix(line)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			builder.AddPrefix(prefix.Masked())
-		}
-		f.Close()
 	}
 
 	set, err := builder.IPSet()
@@ -82,6 +69,9 @@ func merge(source []string) ([]*net.IPNet, error) {
 	}
 
 	prefixes := set.Prefixes()
+	if len(prefixes) == 0 {
+		return nil, errors.New("no valid CIDR in sources")
+	}
 	ips := make([]*net.IPNet, 0, len(prefixes))
 	for _, p := range prefixes {
 		ips = append(ips, &net.IPNet{
@@ -90,6 +80,28 @@ func merge(source []string) ([]*net.IPNet, error) {
 		})
 	}
 	return ips, nil
+}
+
+func readSource(file string, builder *netipx.IPSetBuilder) error {
+	f, err := os.Open(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for lineno := 1; scanner.Scan(); lineno++ {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		prefix, err := netip.ParsePrefix(line)
+		if err != nil {
+			return fmt.Errorf("%s:%d: %w", file, lineno, err)
+		}
+		builder.AddPrefix(prefix.Masked())
+	}
+	return scanner.Err()
 }
 
 func saveFile(data []*net.IPNet, output string) error {
@@ -143,7 +155,7 @@ func buildMMDB(data []*net.IPNet, output string) error {
 	}
 	for _, v := range data {
 		if err := writer.Insert(v, dataType); err != nil {
-			log.Println("fail to insert " + v.String())
+			return fmt.Errorf("insert %s: %w", v, err)
 		}
 	}
 	_, err = writer.WriteTo(outputF)
