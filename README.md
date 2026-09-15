@@ -2,7 +2,7 @@
 
 [![GitHub last commit (branch)](https://img.shields.io/github/last-commit/0x2E/someip/build?label=%E6%9C%80%E6%96%B0%E6%9E%84%E5%BB%BA)](https://github.com/0x2E/someip/tree/build)
 
-中国大陆地区 IPv4 + IPv6，由多个数据源合并而来，每 3 天的 01:00 自动更新。
+中国大陆地区 IPv4 + IPv6，由多个数据源合并而来，定期（cron: `0 1 */3 * *`，即每月 1、4、7、…、31 日 01:00 UTC）自动更新。
 
 下载地址：
 
@@ -31,7 +31,8 @@ IPv6:
 ```shell
 Usage of someip:
   -i, --source strings       CIDR source files
-  -o, --cidr-output string   CIDR ouput (default "cidr.txt")
-  -m, --mmdb-output string   MMDB ouput (default "Country.mmdb")
-  -h, --help                 Show usage
+  -o, --cidr-output string   CIDR output (default "cidr.txt")
+  -m, --mmdb-output string   MMDB output (default "Country.mmdb")
 ```
+
+构建后可用 `go run ./cmd/verify` 对产物做冒烟校验。

@@ -1,3 +1,4 @@
-*.txt
-*.mmdb
+source.txt
+.parts/
 dist/
+*.mmdb

@@ -22,20 +22,13 @@ func main() {
 		cidrSource []string
 		cidrOutput string
 		mmdbOutput string
-		showHelp   bool
 	)
 
 	pflag.StringSliceVarP(&cidrSource, "source", "i", nil, "CIDR source files")
-	pflag.StringVarP(&cidrOutput, "cidr-output", "o", "cidr.txt", "CIDR ouput")
-	pflag.StringVarP(&mmdbOutput, "mmdb-output", "m", "Country.mmdb", "MMDB ouput")
-	pflag.BoolVarP(&showHelp, "help", "h", false, "Show usage")
+	pflag.StringVarP(&cidrOutput, "cidr-output", "o", "cidr.txt", "CIDR output")
+	pflag.StringVarP(&mmdbOutput, "mmdb-output", "m", "Country.mmdb", "MMDB output")
 	pflag.CommandLine.SortFlags = false
 	pflag.Parse()
-
-	if showHelp {
-		pflag.Usage()
-		os.Exit(0)
-	}
 
 	if len(cidrSource) < 1 {
 		log.Fatal("at least one cidr source file is required")
@@ -43,7 +36,7 @@ func main() {
 
 	data, err := merge(cidrSource)
 	if err != nil {
-		log.Fatal("merge cidr: " + err.Error())
+		log.Fatalf("merge cidr: %v", err)
 	}
 
 	if err := saveFile(data, cidrOutput); err != nil {
@@ -145,7 +138,12 @@ func atomicWrite(output string, write func(*os.File) error) error {
 func buildMMDB(data []*net.IPNet, output string) error {
 	writer, err := mmdbwriter.New(mmdbwriter.Options{
 		DatabaseType: "GeoIP2-Country",
-		RecordSize:   24,
+		Description: map[string]string{
+			"en":    "China IP database (merged from public sources)",
+			"zh-CN": "中国大陆 IP 库（多源合并）",
+		},
+		Languages:  []string{"de", "en", "es", "fr", "ja", "pt-BR", "ru", "zh-CN"},
+		RecordSize: 24,
 	})
 	if err != nil {
 		return err
@@ -154,9 +152,10 @@ func buildMMDB(data []*net.IPNet, output string) error {
 	// https://github.com/Hackl0us/GeoIP2-CN/blob/c053afa7ef3d092b1ea84aa229fe035a49fe3603/main.go#L64
 	// https://dev.maxmind.com/geoip/docs/databases/city-and-country
 	// https://dev.maxmind.com/static/pdf/GeoLite2-and-GeoIP2-Precision-Web-Services-Comparison.pdf
+	const chinaGeoNameID = 1814991
 	dataType := mmdbtype.Map{
 		"country": mmdbtype.Map{
-			"geoname_id":           mmdbtype.Uint32(1814991),
+			"geoname_id":           mmdbtype.Uint32(chinaGeoNameID),
 			"is_in_european_union": mmdbtype.Bool(false),
 			"iso_code":             mmdbtype.String("CN"),
 			"names": mmdbtype.Map{
