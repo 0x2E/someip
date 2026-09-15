@@ -4,13 +4,14 @@ import (
 	"bufio"
 	"log"
 	"net"
+	"net/netip"
 	"os"
 	"strings"
 
-	"github.com/Netnod/go-cidrman"
 	"github.com/maxmind/mmdbwriter"
 	"github.com/maxmind/mmdbwriter/mmdbtype"
 	"github.com/spf13/pflag"
+	"go4.org/netipx"
 )
 
 func main() {
@@ -52,7 +53,7 @@ func main() {
 }
 
 func merge(source []string) ([]*net.IPNet, error) {
-	cidrMap := make(map[string]struct{})
+	builder := &netipx.IPSetBuilder{}
 
 	for _, file := range source {
 		f, err := os.Open(file)
@@ -60,27 +61,35 @@ func merge(source []string) ([]*net.IPNet, error) {
 			return nil, err
 		}
 		scanner := bufio.NewScanner(f)
-		scanner.Split(bufio.ScanLines)
 		for scanner.Scan() {
 			line := strings.TrimSpace(scanner.Text())
 			if line == "" {
 				continue
 			}
-			cidrMap[line] = struct{}{}
+			prefix, err := netip.ParsePrefix(line)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			builder.AddPrefix(prefix.Masked())
 		}
 		f.Close()
 	}
 
-	ips := make([]*net.IPNet, 0, len(cidrMap))
-	for cidr := range cidrMap {
-		_, c, err := net.ParseCIDR(cidr)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		ips = append(ips, c)
+	set, err := builder.IPSet()
+	if err != nil {
+		return nil, err
 	}
-	return cidrman.MergeIPNets(ips)
+
+	prefixes := set.Prefixes()
+	ips := make([]*net.IPNet, 0, len(prefixes))
+	for _, p := range prefixes {
+		ips = append(ips, &net.IPNet{
+			IP:   p.Addr().AsSlice(),
+			Mask: net.CIDRMask(p.Bits(), p.Addr().BitLen()),
+		})
+	}
+	return ips, nil
 }
 
 func saveFile(data []*net.IPNet, output string) error {

@@ -20,4 +20,4 @@ download https://raw.githubusercontent.com/gaoyifan/china-operator-ip/refs/heads
 
 mkdir -p dist
 
-go run main.go -i $source -o dist/cidr.txt -m dist/Country.mmdb >/dev/null
+go run main.go -i "$source" -o dist/cidr.txt -m dist/Country.mmdb
