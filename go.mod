@@ -1,6 +1,6 @@
 module github.com/0x2E/someip
 
-go 1.23
+go 1.27
 
 require (
 	github.com/maxmind/mmdbwriter v1.0.0
