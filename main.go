@@ -100,6 +100,9 @@ func readSource(file string, builder *netipx.IPSetBuilder) error {
 		if err != nil {
 			return fmt.Errorf("%s:%d: %w", file, lineno, err)
 		}
+		if prefix.Addr().Is4In6() {
+			return fmt.Errorf("%s:%d: 4-in-6 address %q is not supported", file, lineno, line)
+		}
 		builder.AddPrefix(prefix.Masked())
 	}
 	return scanner.Err()
