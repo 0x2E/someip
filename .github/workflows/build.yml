@@ -25,6 +25,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Test
+        run: |
+          go vet ./...
+          go test ./...
       - name: Build
         run: |
           ./build.sh
