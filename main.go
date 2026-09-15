@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/netip"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/maxmind/mmdbwriter"
@@ -105,26 +106,40 @@ func readSource(file string, builder *netipx.IPSetBuilder) error {
 }
 
 func saveFile(data []*net.IPNet, output string) error {
-	outputF, err := os.Create(output)
+	return atomicWrite(output, func(f *os.File) error {
+		writer := bufio.NewWriter(f)
+		for _, v := range data {
+			writer.WriteString(v.String())
+			writer.WriteByte('\n')
+		}
+		return writer.Flush()
+	})
+}
+
+// atomicWrite writes output via a temp file in the same directory and
+// renames it into place, so a failure never leaves a truncated file behind.
+func atomicWrite(output string, write func(*os.File) error) error {
+	dir := filepath.Dir(output)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(dir, "."+filepath.Base(output)+".tmp-*")
 	if err != nil {
 		return err
 	}
-	defer outputF.Close()
+	defer os.Remove(tmp.Name()) // no-op after a successful rename
 
-	writer := bufio.NewWriter(outputF)
-	for _, v := range data {
-		writer.WriteString(v.String() + "\n")
+	if err := write(tmp); err != nil {
+		tmp.Close()
+		return err
 	}
-	return writer.Flush()
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), output)
 }
 
 func buildMMDB(data []*net.IPNet, output string) error {
-	outputF, err := os.Create(output)
-	if err != nil {
-		return err
-	}
-	defer outputF.Close()
-
 	writer, err := mmdbwriter.New(mmdbwriter.Options{
 		DatabaseType: "GeoIP2-Country",
 		RecordSize:   24,
@@ -158,6 +173,8 @@ func buildMMDB(data []*net.IPNet, output string) error {
 			return fmt.Errorf("insert %s: %w", v, err)
 		}
 	}
-	_, err = writer.WriteTo(outputF)
-	return err
+	return atomicWrite(output, func(f *os.File) error {
+		_, err := writer.WriteTo(f)
+		return err
+	})
 }
